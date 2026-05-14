@@ -2,24 +2,24 @@ import type { HTMLAttributes, ReactNode } from 'react';
 import clsx from 'clsx';
 import styles from './Card.module.css';
 
-type CardVariant = 'default' | 'plain' | 'pink' | 'mint' | 'sky' | 'lavender' | 'yellow';
+export type CardVariant = 'plain' | 'pink' | 'mint' | 'sky' | 'lavender' | 'yellow';
 
-export type CardProps = HTMLAttributes<HTMLDivElement> & {
+type CardProps = HTMLAttributes<HTMLDivElement> & {
   variant?: CardVariant;
+  tone?: CardVariant;
   children: ReactNode;
 };
 
 export default function Card({
-  variant = 'default',
+  variant,
+  tone,
   className,
   children,
   ...rest
 }: CardProps) {
+  const resolved = variant ?? tone ?? 'plain';
   return (
-    <div
-      className={clsx(styles.card, variant !== 'default' && styles[variant], className)}
-      {...rest}
-    >
+    <div className={clsx(styles.card, styles[resolved], className)} {...rest}>
       {children}
     </div>
   );
