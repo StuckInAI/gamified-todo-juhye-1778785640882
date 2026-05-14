@@ -1,70 +1,66 @@
-import Card from '@/components/ui/Card';
+import { useMemo } from 'react';
 import AddTaskForm from '@/components/tasks/AddTaskForm';
 import TaskItem from '@/components/tasks/TaskItem';
 import { useGame } from '@/hooks/useGame';
 import { useToast } from '@/hooks/useToast';
-import styles from './TasksPage.module.css';
 
 export default function TasksPage() {
   const { state, addTask, toggleTask, deleteTask } = useGame();
   const { showToast } = useToast();
 
-  const open = state.tasks.filter((t) => !t.completed);
-  const done = state.tasks.filter((t) => t.completed);
+  const { open, done } = useMemo(() => {
+    const open = state.tasks.filter((t) => !t.completed);
+    const done = state.tasks.filter((t) => t.completed);
+    return { open, done };
+  }, [state.tasks]);
 
   const handleToggle = (id: string) => {
-    const result = toggleTask(id);
-    if (result) {
+    const res = toggleTask(id);
+    if (res) {
       showToast({
-        emoji: result.leveledUp ? '🎊' : '✨',
-        title: result.leveledUp ? 'Level up!' : 'Nice work!',
-        message: `+${result.xp} XP, +${result.coins} coins`,
+        emoji: res.leveledUp ? '🎉' : '✨',
+        title: res.leveledUp ? 'Level up!' : 'Quest complete!',
+        message: `+${res.xp} XP · +${res.coins} coins`,
       });
     }
   };
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>📋 Your Quests</h1>
-        <p className={styles.subtitle}>
-          Add tasks with gentle deadlines and a little grace period. You're doing great.
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <header>
+        <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 28 }}>
+          Your Quests 🌿
+        </h1>
+        <p style={{ marginTop: 6, color: 'var(--color-ink-soft)' }}>
+          Small steps, big growth. Add a quest below to get started.
         </p>
       </header>
 
       <AddTaskForm onAdd={addTask} />
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>
-          🌱 To do <span className={styles.count}>{open.length}</span>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <h2 style={{ margin: 0, fontSize: 16, color: 'var(--color-ink-soft)' }}>
+          In progress ({open.length})
         </h2>
         {open.length === 0 ? (
-          <Card tone="mint" className={styles.empty}>
-            🌷 No open quests. Take a breath, sip something warm, and add one when you're ready.
-          </Card>
+          <div style={{ padding: 20, textAlign: 'center', color: 'var(--color-ink-faint)' }}>
+            All caught up! 🌼
+          </div>
         ) : (
-          <ul className={styles.list}>
-            {open.map((t) => (
-              <li key={t.id}>
-                <TaskItem task={t} onToggle={handleToggle} onDelete={deleteTask} />
-              </li>
-            ))}
-          </ul>
+          open.map((task) => (
+            <TaskItem key={task.id} task={task} onToggle={handleToggle} onDelete={deleteTask} />
+          ))
         )}
       </section>
 
       {done.length > 0 && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>
-            ✅ Completed <span className={styles.count}>{done.length}</span>
+        <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <h2 style={{ margin: 0, fontSize: 16, color: 'var(--color-ink-soft)' }}>
+            Completed ({done.length})
           </h2>
-          <ul className={styles.list}>
-            {done.map((t) => (
-              <li key={t.id}>
-                <TaskItem task={t} onToggle={handleToggle} onDelete={deleteTask} />
-              </li>
-            ))}
-          </ul>
+          {done.map((task) => (
+            <TaskItem key={task.id} task={task} onToggle={handleToggle} onDelete={deleteTask} />
+          ))}
         </section>
       )}
     </div>

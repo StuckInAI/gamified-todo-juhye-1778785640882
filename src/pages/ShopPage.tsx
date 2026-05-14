@@ -1,41 +1,38 @@
-import { useState } from 'react';
-import { ShoppingBag, Coins, Check } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Coins, Check, ShoppingBag } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Character from '@/components/character/Character';
 import { useGame } from '@/hooks/useGame';
-import { SHOP_ITEMS } from '@/lib/shopItems';
 import { useToast } from '@/hooks/useToast';
-import clsx from 'clsx';
-import styles from './ShopPage.module.css';
+import { SHOP_ITEMS } from '@/lib/shopItems';
+import type { ItemCategory } from '@/types';
 
-const CATEGORIES = [
-  { id: 'all', label: 'All', emoji: '✨' },
-  { id: 'hat', label: 'Hats', emoji: '🎩' },
-  { id: 'outfit', label: 'Outfits', emoji: '👗' },
-  { id: 'accessory', label: 'Accessories', emoji: '🎒' },
-  { id: 'decoration', label: 'Decorations', emoji: '🌸' },
-] as const;
+const CATEGORIES: { key: ItemCategory | 'all'; label: string; emoji: string }[] = [
+  { key: 'all', label: 'All', emoji: '✨' },
+  { key: 'hat', label: 'Hats', emoji: '🎩' },
+  { key: 'outfit', label: 'Outfits', emoji: '👕' },
+  { key: 'accessory', label: 'Accessories', emoji: '🎀' },
+  { key: 'decoration', label: 'Scenery', emoji: '🌳' },
+];
 
 export default function ShopPage() {
-  const { state, buyItem } = useGame();
-  const { push } = useToast();
-  const [filter, setFilter] = useState<string>('all');
+  const { state, buyItem, equipItem } = useGame();
+  const { showToast } = useToast();
+  const [filter, setFilter] = useState<ItemCategory | 'all'>('all');
 
-  const items = filter === 'all' ? SHOP_ITEMS : SHOP_ITEMS.filter((i) => i.category === filter);
+  const items = useMemo(() => {
+    if (filter === 'all') return SHOP_ITEMS;
+    return SHOP_ITEMS.filter((i) => i.category === filter);
+  }, [filter]);
 
   const handleBuy = (id: string) => {
     const res = buyItem(id);
     if (res.ok) {
-      const item = SHOP_ITEMS.find((i) => i.id === id);
-      push({
-        emoji: item?.emoji ?? '🎁',
-        title: 'Purchased!',
-        message: `${item?.name ?? 'Item'} is now yours.`,
-      });
+      showToast({ emoji: '🛍️', title: 'Purchased & equipped!', message: 'Looking cozy 💕' });
     } else {
-      push({
-        emoji: '💸',
+      showToast({
+        emoji: '😿',
         title: 'Could not buy',
         message: res.reason,
       });
@@ -43,60 +40,106 @@ export default function ShopPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <Card tone="lavender">
-        <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>
-              <ShoppingBag size={26} /> Cozy Shop
-            </h1>
-            <p className={styles.subtitle}>Earn coins by completing tasks, then treat your character ✨</p>
-          </div>
-          <div className={styles.coinBig}>
-            <Coins size={20} />
-            <span>{state.character.coins}</span>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 28 }}>
+            <ShoppingBag size={26} style={{ verticalAlign: '-4px' }} /> Cozy Shop
+          </h1>
+          <p style={{ marginTop: 6, color: 'var(--color-ink-soft)' }}>
+            Spend coins on cute things for {state.character.name}.
+          </p>
         </div>
-      </Card>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 14px',
+            background: 'var(--color-yellow)',
+            borderRadius: 999,
+            fontWeight: 700,
+          }}
+        >
+          <Coins size={18} />
+          {state.character.coins} coins
+        </div>
+      </header>
 
-      <div className={styles.layout}>
-        <aside className={styles.preview}>
-          <Character size="md" showName />
-        </aside>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'minmax(200px, 280px) 1fr',
+          gap: 24,
+          alignItems: 'start',
+        }}
+      >
+        <Character size="md" showName />
 
-        <div className={styles.shopArea}>
-          <div className={styles.filters}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {CATEGORIES.map((c) => (
               <button
-                key={c.id}
-                onClick={() => setFilter(c.id)}
-                className={clsx(styles.filterBtn, filter === c.id && styles.filterBtnActive)}
+                key={c.key}
+                onClick={() => setFilter(c.key)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 999,
+                  border: '2px solid var(--color-cream-2)',
+                  background: filter === c.key ? 'var(--color-pink)' : 'white',
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}
               >
-                <span>{c.emoji}</span> {c.label}
+                {c.emoji} {c.label}
               </button>
             ))}
           </div>
 
-          <div className={styles.grid}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+              gap: 14,
+            }}
+          >
             {items.map((item) => {
               const owned = state.character.ownedItems.includes(item.id);
-              const canAfford = state.character.coins >= item.price;
+              const equipped =
+                state.character.equipped[item.category] === item.id;
               return (
-                <Card key={item.id} className={styles.itemCard}>
-                  <div className={styles.itemEmoji}>{item.emoji}</div>
-                  <div className={styles.itemName}>{item.name}</div>
-                  <div className={styles.itemPrice}>
-                    <Coins size={14} /> {item.price}
+                <Card key={item.id} tone="plain" className="">
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: 42 }}>{item.emoji}</div>
+                    <div style={{ fontWeight: 700, marginTop: 6 }}>{item.name}</div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: 'var(--color-ink-soft)',
+                        marginTop: 4,
+                        minHeight: 32,
+                      }}
+                    >
+                      {item.description}
+                    </div>
+                    <div style={{ marginTop: 10 }}>
+                      {owned ? (
+                        equipped ? (
+                          <Button variant="ghost" size="sm" disabled>
+                            <Check size={14} /> Equipped
+                          </Button>
+                        ) : (
+                          <Button variant="secondary" size="sm" onClick={() => equipItem(item.id)}>
+                            Equip
+                          </Button>
+                        )
+                      ) : (
+                        <Button size="sm" onClick={() => handleBuy(item.id)}>
+                          <Coins size={14} /> {item.price}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  {owned ? (
-                    <Button variant="secondary" size="sm" disabled>
-                      <Check size={14} /> Owned
-                    </Button>
-                  ) : (
-                    <Button size="sm" disabled={!canAfford} onClick={() => handleBuy(item.id)}>
-                      Buy
-                    </Button>
-                  )}
                 </Card>
               );
             })}
