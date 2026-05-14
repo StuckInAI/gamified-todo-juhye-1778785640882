@@ -59,13 +59,13 @@
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  padding-bottom: 10%;
+  padding-bottom: 6%;
 }
 
 .character {
   position: relative;
   width: 50%;
-  aspect-ratio: 1 / 1.2;
+  aspect-ratio: 1 / 1.4;
   animation: bounce 2.4s ease-in-out infinite;
 }
 
@@ -84,6 +84,7 @@
   border-radius: 50%;
   border: 3px solid var(--color-ink);
   box-shadow: inset -6px -6px 0 rgba(255, 200, 170, 0.45);
+  z-index: 3;
 }
 
 .eyes {
@@ -139,43 +140,121 @@
   left: 50%;
   transform: translateX(-50%);
   font-size: clamp(28px, 10vw, 56px);
-  z-index: 2;
+  z-index: 4;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.15));
 }
 
 .body {
   position: absolute;
-  bottom: 0;
+  bottom: 14%;
   left: 18%;
   width: 64%;
-  height: 38%;
+  height: 32%;
   background: var(--color-pink);
   border: 3px solid var(--color-ink);
   border-radius: 24px 24px 14px 14px;
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 2;
 }
 
 .outfit {
   font-size: clamp(20px, 7vw, 38px);
 }
 
+.arm {
+  position: absolute;
+  top: 18%;
+  width: 18%;
+  height: 60%;
+  background: #fff1d6;
+  border: 3px solid var(--color-ink);
+  border-radius: 16px;
+  z-index: 1;
+  box-shadow: inset -3px -3px 0 rgba(255, 200, 170, 0.45);
+}
+
+.armLeft {
+  left: -16%;
+  transform-origin: top center;
+  animation: swingLeft 2.4s ease-in-out infinite;
+}
+
+.armRight {
+  right: -16%;
+  transform-origin: top center;
+  animation: swingRight 2.4s ease-in-out infinite;
+}
+
+@keyframes swingLeft {
+  0%, 100% { transform: rotate(6deg); }
+  50% { transform: rotate(-6deg); }
+}
+
+@keyframes swingRight {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
+}
+
+.hand {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 130%;
+  aspect-ratio: 1;
+  background: #fff1d6;
+  border: 3px solid var(--color-ink);
+  border-radius: 50%;
+}
+
+.leg {
+  position: absolute;
+  bottom: 0;
+  width: 18%;
+  height: 18%;
+  background: var(--color-pink);
+  border: 3px solid var(--color-ink);
+  border-radius: 10px 10px 14px 14px;
+  z-index: 1;
+}
+
+.legLeft {
+  left: 26%;
+}
+
+.legRight {
+  right: 26%;
+}
+
+.foot {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140%;
+  height: 50%;
+  background: var(--color-ink);
+  border-radius: 50% 50% 30% 30%;
+}
+
 .accessory {
   position: absolute;
   bottom: 30%;
-  right: -10%;
+  right: -18%;
   font-size: clamp(20px, 6vw, 32px);
   animation: float 2.5s ease-in-out infinite;
+  z-index: 4;
 }
 
 .shadow {
   position: absolute;
-  bottom: 6%;
+  bottom: 3%;
   left: 50%;
   transform: translateX(-50%);
   width: 45%;
-  height: 12px;
+  height: 10px;
   background: rgba(74, 58, 46, 0.18);
   border-radius: 50%;
   filter: blur(4px);

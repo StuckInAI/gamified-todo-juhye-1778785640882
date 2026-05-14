@@ -38,7 +38,19 @@ export default function CharacterAvatar({ size = 'md', showName = false }: Chara
             <div className={styles.mouth} />
           </div>
           <div className={styles.body}>
+            <div className={clsx(styles.arm, styles.armLeft)}>
+              <div className={styles.hand} />
+            </div>
+            <div className={clsx(styles.arm, styles.armRight)}>
+              <div className={styles.hand} />
+            </div>
             {outfit ? <span className={styles.outfit}>{outfit.emoji}</span> : <span className={styles.outfit}>👕</span>}
+          </div>
+          <div className={clsx(styles.leg, styles.legLeft)}>
+            <div className={styles.foot} />
+          </div>
+          <div className={clsx(styles.leg, styles.legRight)}>
+            <div className={styles.foot} />
           </div>
           {accessory && <div className={styles.accessory}>{accessory.emoji}</div>}
         </div>
