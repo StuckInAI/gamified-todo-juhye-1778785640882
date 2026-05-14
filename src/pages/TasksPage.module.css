@@ -1,0 +1,90 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.title {
+  font-size: clamp(24px, 4vw, 32px);
+  color: var(--color-ink);
+}
+
+.sub {
+  color: var(--color-ink-soft);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.filters {
+  display: flex;
+  gap: 6px;
+  background: white;
+  padding: 5px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--color-cream-2);
+}
+
+.pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-ink-soft);
+  transition: all 0.18s ease;
+}
+
+.pill:hover {
+  background: var(--color-cream-2);
+}
+
+.pillActive {
+  background: var(--color-pink);
+  color: var(--color-ink);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--color-cream-2);
+}
+
+.emptyEmoji {
+  font-size: 56px;
+  margin-bottom: 10px;
+  animation: wiggle 3s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0); }
+  50% { transform: rotate(8deg); }
+}
+
+.empty h3 {
+  font-size: 20px;
+  margin-bottom: 6px;
+  color: var(--color-ink);
+}
+
+.empty p {
+  color: var(--color-ink-soft);
+  max-width: 380px;
+  margin: 0 auto;
+  font-size: 14px;
+}

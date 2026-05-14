@@ -1,0 +1,14 @@
+.card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-md);
+  border: 2px solid var(--color-cream-2);
+}
+
+.plain { background: white; }
+.pink { background: var(--color-pink); border-color: var(--color-pink-deep); }
+.mint { background: var(--color-mint); border-color: var(--color-mint-deep); }
+.sky { background: var(--color-sky); border-color: var(--color-sky-deep); }
+.lavender { background: var(--color-lavender); border-color: var(--color-lavender-deep); }
+.yellow { background: var(--color-yellow); border-color: var(--color-yellow-deep); }
