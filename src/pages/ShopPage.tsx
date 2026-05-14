@@ -1,126 +1,138 @@
-import { useState } from 'react';
-import { Coins, Check, Sparkles } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Coins, Check, Lock } from 'lucide-react';
 import { useGame } from '@/hooks/useGame';
+import { useToast } from '@/hooks/useToast';
 import { SHOP_ITEMS } from '@/lib/shopItems';
 import type { ShopItem } from '@/types';
 import Button from '@/components/ui/Button';
-import { useToast } from '@/hooks/useToast';
+import Character from '@/components/character/Character';
 import styles from './ShopPage.module.css';
 import clsx from 'clsx';
 
-type Category = ShopItem['category'] | 'all';
+type CategoryFilter = 'all' | ShopItem['category'];
 
-const CATEGORIES: { value: Category; label: string; emoji: string }[] = [
+const CATEGORIES: { value: CategoryFilter; label: string; emoji: string }[] = [
   { value: 'all', label: 'All', emoji: '✨' },
   { value: 'hat', label: 'Hats', emoji: '🎩' },
-  { value: 'outfit', label: 'Outfits', emoji: '👕' },
+  { value: 'outfit', label: 'Outfits', emoji: '👗' },
   { value: 'accessory', label: 'Accessories', emoji: '🎀' },
   { value: 'decoration', label: 'Decorations', emoji: '🌸' },
 ];
 
 export default function ShopPage() {
-  const { state, purchaseItem, equipItem } = useGame();
-  const { character } = state;
+  const { state, dispatch } = useGame();
   const { showToast } = useToast();
-  const [category, setCategory] = useState<Category>('all');
+  const [filter, setFilter] = useState<CategoryFilter>('all');
 
-  const items = category === 'all' ? SHOP_ITEMS : SHOP_ITEMS.filter((i) => i.category === category);
+  const items = useMemo(() => {
+    if (filter === 'all') return SHOP_ITEMS;
+    return SHOP_ITEMS.filter((i) => i.category === filter);
+  }, [filter]);
 
-  const handleBuy = (item: ShopItem) => {
-    const res = purchaseItem(item.id);
-    if (res.ok) {
+  const ownedIds = new Set(state.character.ownedItems);
+  const equipped = state.character.equipped;
+
+  const handlePurchase = (item: ShopItem) => {
+    if (ownedIds.has(item.id)) {
       showToast({
-        title: `${item.emoji} ${item.name} acquired!`,
-        message: `Tap to equip it from your wardrobe.`,
-        tone: 'success',
+        title: 'Already owned',
+        message: `You already have ${item.name}!`,
       });
-    } else {
-      showToast({
-        title: `Can't buy ${item.name}`,
-        message: res.reason,
-        tone: 'warning',
-      });
+      return;
     }
-  };
-
-  const handleEquip = (item: ShopItem) => {
-    equipItem(item.id);
+    if (state.character.coins < item.price) {
+      showToast({
+        title: 'Not enough coins',
+        message: `You need ${item.price - state.character.coins} more coins.`,
+      });
+      return;
+    }
+    dispatch({ type: 'PURCHASE_ITEM', itemId: item.id });
     showToast({
-      title: `${item.emoji} ${item.name} equipped!`,
-      tone: 'success',
+      title: `Purchased ${item.name}!`,
+      message: `Enjoy your new ${item.category}! 💖`,
     });
   };
 
+  const handleEquip = (item: ShopItem) => {
+    dispatch({ type: 'EQUIP_ITEM', itemId: item.id });
+  };
+
+  const isEquipped = (item: ShopItem) => equipped[item.category] === item.id;
+
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
+      <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>
-            <Sparkles size={22} /> Cozy Shop
-          </h1>
-          <p className={styles.subtitle}>
-            Spend your hard-earned coins on cute things for your character.
-          </p>
+          <h1 className={styles.title}>🛍️ Cozy Shop</h1>
+          <p className={styles.subtitle}>Spend your hard-earned coins on cute things ✨</p>
         </div>
-        <div className={styles.coinDisplay}>
+        <div className={styles.coinBalance}>
           <Coins size={20} />
-          <span>{character.coins} coins</span>
+          <span>{state.character.coins}</span>
         </div>
-      </header>
-
-      <div className={styles.tabs}>
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.value}
-            onClick={() => setCategory(cat.value)}
-            className={clsx(styles.tab, category === cat.value && styles.tabActive)}
-          >
-            <span>{cat.emoji}</span>
-            <span>{cat.label}</span>
-          </button>
-        ))}
       </div>
 
-      <div className={styles.grid}>
-        {items.map((item) => {
-          const owned = character.ownedItems.includes(item.id);
-          const equipped = character.equipped[item.category] === item.id;
-          const canAfford = character.coins >= item.price;
+      <div className={styles.layout}>
+        <aside className={styles.preview}>
+          <Character size="md" showName />
+          <p className={styles.previewHint}>Try things on by tapping Equip ✨</p>
+        </aside>
 
-          return (
-            <div key={item.id} className={clsx(styles.card, equipped && styles.cardEquipped)}>
-              <div className={styles.emoji}>{item.emoji}</div>
-              <div className={styles.name}>{item.name}</div>
-              {item.description && <div className={styles.desc}>{item.description}</div>}
-              <div className={styles.priceRow}>
-                <span className={styles.price}>
-                  <Coins size={14} />
-                  {item.price}
-                </span>
-              </div>
-              {owned ? (
-                equipped ? (
-                  <Button variant="secondary" size="sm" disabled>
-                    <Check size={14} /> Equipped
-                  </Button>
-                ) : (
-                  <Button variant="ghost" size="sm" onClick={() => handleEquip(item)}>
-                    Equip
-                  </Button>
-                )
-              ) : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  disabled={!canAfford}
-                  onClick={() => handleBuy(item)}
-                >
-                  {canAfford ? 'Buy' : 'Not enough'}
-                </Button>
-              )}
-            </div>
-          );
-        })}
+        <div className={styles.shop}>
+          <div className={styles.filters}>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.value}
+                onClick={() => setFilter(cat.value)}
+                className={clsx(styles.filterBtn, filter === cat.value && styles.filterBtnActive)}
+              >
+                <span>{cat.emoji}</span>
+                <span>{cat.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.grid}>
+            {items.map((item) => {
+              const owned = ownedIds.has(item.id);
+              const equippedNow = isEquipped(item);
+              const canAfford = state.character.coins >= item.price;
+              return (
+                <div key={item.id} className={clsx(styles.card, equippedNow && styles.cardEquipped)}>
+                  <div className={styles.emoji}>{item.emoji}</div>
+                  <div className={styles.name}>{item.name}</div>
+                  <div className={styles.category}>{item.category}</div>
+                  {owned ? (
+                    <Button
+                      size="sm"
+                      variant={equippedNow ? 'secondary' : 'ghost'}
+                      onClick={() => handleEquip(item)}
+                    >
+                      {equippedNow ? (
+                        <>
+                          <Check size={14} /> Equipped
+                        </>
+                      ) : (
+                        'Equip'
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant={canAfford ? 'primary' : 'ghost'}
+                      onClick={() => handlePurchase(item)}
+                      disabled={!canAfford}
+                    >
+                      {canAfford ? <Coins size={14} /> : <Lock size={14} />}
+                      {item.price}
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
