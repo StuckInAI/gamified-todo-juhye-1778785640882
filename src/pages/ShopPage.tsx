@@ -1,78 +1,82 @@
 import { useState } from 'react';
-import { Coins, Check, Lock } from 'lucide-react';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
+import { Coins, Check, Sparkles } from 'lucide-react';
 import { useGame } from '@/hooks/useGame';
-import { useToast } from '@/hooks/useToast';
 import { SHOP_ITEMS } from '@/lib/shopItems';
-import type { ItemCategory } from '@/types';
-import clsx from 'clsx';
+import type { ShopItem } from '@/types';
+import Button from '@/components/ui/Button';
+import { useToast } from '@/hooks/useToast';
 import styles from './ShopPage.module.css';
+import clsx from 'clsx';
 
-const CATEGORIES: { key: ItemCategory | 'all'; label: string; emoji: string }[] = [
-  { key: 'all', label: 'All', emoji: '✨' },
-  { key: 'hat', label: 'Hats', emoji: '🎩' },
-  { key: 'outfit', label: 'Outfits', emoji: '👕' },
-  { key: 'accessory', label: 'Accessories', emoji: '🎀' },
-  { key: 'decoration', label: 'Decorations', emoji: '🌸' },
+type Category = ShopItem['category'] | 'all';
+
+const CATEGORIES: { value: Category; label: string; emoji: string }[] = [
+  { value: 'all', label: 'All', emoji: '✨' },
+  { value: 'hat', label: 'Hats', emoji: '🎩' },
+  { value: 'outfit', label: 'Outfits', emoji: '👕' },
+  { value: 'accessory', label: 'Accessories', emoji: '🎀' },
+  { value: 'decoration', label: 'Decorations', emoji: '🌸' },
 ];
 
 export default function ShopPage() {
-  const { state, buyItem, equipItem } = useGame();
-  const { showToast } = useToast();
-  const [filter, setFilter] = useState<ItemCategory | 'all'>('all');
-
+  const { state, purchaseItem, equipItem } = useGame();
   const { character } = state;
-  const items = filter === 'all' ? SHOP_ITEMS : SHOP_ITEMS.filter((i) => i.category === filter);
+  const { showToast } = useToast();
+  const [category, setCategory] = useState<Category>('all');
 
-  const handleBuy = (itemId: string, name: string) => {
-    const res = buyItem(itemId);
+  const items = category === 'all' ? SHOP_ITEMS : SHOP_ITEMS.filter((i) => i.category === category);
+
+  const handleBuy = (item: ShopItem) => {
+    const res = purchaseItem(item.id);
     if (res.ok) {
       showToast({
-        emoji: '🎉',
-        title: 'Purchased!',
-        message: `${name} is now yours and equipped.`,
+        title: `${item.emoji} ${item.name} acquired!`,
+        message: `Tap to equip it from your wardrobe.`,
+        tone: 'success',
       });
     } else {
       showToast({
-        emoji: '😢',
-        title: 'Could not buy',
+        title: `Can't buy ${item.name}`,
         message: res.reason,
+        tone: 'warning',
       });
     }
   };
 
-  const handleEquip = (itemId: string, name: string) => {
-    equipItem(itemId);
+  const handleEquip = (item: ShopItem) => {
+    equipItem(item.id);
     showToast({
-      emoji: '✨',
-      title: 'Equipped!',
-      message: `${name} looks great on you.`,
+      title: `${item.emoji} ${item.name} equipped!`,
+      tone: 'success',
     });
   };
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
+      <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Cozy Shop 🛍️</h1>
-          <p className={styles.subtitle}>Spend your hard-earned coins on adorable accessories.</p>
+          <h1 className={styles.title}>
+            <Sparkles size={22} /> Cozy Shop
+          </h1>
+          <p className={styles.subtitle}>
+            Spend your hard-earned coins on cute things for your character.
+          </p>
         </div>
-        <div className={styles.coins}>
-          <Coins size={18} />
-          <span>{character.coins}</span>
+        <div className={styles.coinDisplay}>
+          <Coins size={20} />
+          <span>{character.coins} coins</span>
         </div>
-      </div>
+      </header>
 
-      <div className={styles.filters}>
-        {CATEGORIES.map((c) => (
+      <div className={styles.tabs}>
+        {CATEGORIES.map((cat) => (
           <button
-            key={c.key}
-            onClick={() => setFilter(c.key)}
-            className={clsx(styles.filterBtn, filter === c.key && styles.filterBtnActive)}
+            key={cat.value}
+            onClick={() => setCategory(cat.value)}
+            className={clsx(styles.tab, category === cat.value && styles.tabActive)}
           >
-            <span>{c.emoji}</span>
-            <span>{c.label}</span>
+            <span>{cat.emoji}</span>
+            <span>{cat.label}</span>
           </button>
         ))}
       </div>
@@ -80,40 +84,41 @@ export default function ShopPage() {
       <div className={styles.grid}>
         {items.map((item) => {
           const owned = character.ownedItems.includes(item.id);
-          const equipped =
-            character.equipped[item.category] === item.id;
+          const equipped = character.equipped[item.category] === item.id;
           const canAfford = character.coins >= item.price;
 
           return (
-            <Card key={item.id} className={styles.itemCard}>
-              <div className={styles.itemEmoji}>{item.emoji}</div>
-              <div className={styles.itemName}>{item.name}</div>
-              <div className={styles.itemCategory}>{item.category}</div>
-              <div className={styles.itemPrice}>
-                <Coins size={14} />
-                <span>{item.price}</span>
+            <div key={item.id} className={clsx(styles.card, equipped && styles.cardEquipped)}>
+              <div className={styles.emoji}>{item.emoji}</div>
+              <div className={styles.name}>{item.name}</div>
+              {item.description && <div className={styles.desc}>{item.description}</div>}
+              <div className={styles.priceRow}>
+                <span className={styles.price}>
+                  <Coins size={14} />
+                  {item.price}
+                </span>
               </div>
               {owned ? (
                 equipped ? (
-                  <Button size="sm" variant="secondary" disabled>
+                  <Button variant="secondary" size="sm" disabled>
                     <Check size={14} /> Equipped
                   </Button>
                 ) : (
-                  <Button size="sm" variant="ghost" onClick={() => handleEquip(item.id, item.name)}>
+                  <Button variant="ghost" size="sm" onClick={() => handleEquip(item)}>
                     Equip
                   </Button>
                 )
               ) : (
                 <Button
+                  variant="primary"
                   size="sm"
-                  variant={canAfford ? 'primary' : 'ghost'}
                   disabled={!canAfford}
-                  onClick={() => handleBuy(item.id, item.name)}
+                  onClick={() => handleBuy(item)}
                 >
-                  {canAfford ? 'Buy' : (<><Lock size={12} /> Locked</>)}
+                  {canAfford ? 'Buy' : 'Not enough'}
                 </Button>
               )}
-            </Card>
+            </div>
           );
         })}
       </div>
