@@ -1,59 +1,43 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Coins, Check, Sparkles } from 'lucide-react';
 import { useGame } from '@/hooks/useGame';
-import { useToast } from '@/hooks/useToast';
 import { SHOP_ITEMS } from '@/lib/shopItems';
 import type { ShopItem } from '@/types';
+import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-import Character from '@/components/character/Character';
-import { Coins, Check, Lock } from 'lucide-react';
+import CharacterAvatar from '@/components/character/CharacterAvatar';
+import { useToast } from '@/hooks/useToast';
 import clsx from 'clsx';
 import styles from './ShopPage.module.css';
 
 type Category = 'all' | ShopItem['category'];
 
-const CATEGORIES: { value: Category; label: string; emoji: string }[] = [
-  { value: 'all', label: 'All', emoji: '🛍️' },
-  { value: 'hat', label: 'Hats', emoji: '🎩' },
-  { value: 'outfit', label: 'Outfits', emoji: '👕' },
-  { value: 'accessory', label: 'Accessories', emoji: '✨' },
-  { value: 'decoration', label: 'Decorations', emoji: '🌸' },
-];
-
 export default function ShopPage() {
   const { state, buyItem, equipItem } = useGame();
+  const { character } = state;
   const { showToast } = useToast();
   const [category, setCategory] = useState<Category>('all');
 
-  const items = SHOP_ITEMS.filter((item) => category === 'all' || item.category === category);
-  const ownedIds = new Set(state.character.ownedItems);
+  const items = useMemo(() => {
+    if (category === 'all') return SHOP_ITEMS;
+    return SHOP_ITEMS.filter((i) => i.category === category);
+  }, [category]);
 
-  const handleBuy = (item: ShopItem) => {
-    if (ownedIds.has(item.id)) {
-      // already owned -> equip instead
-      equipItem?.(item);
-      showToast({
-        title: `Equipped ${item.name}`,
-        message: `Looking cute! 💖`,
-        emoji: item.emoji,
-      });
+  const owned = (id: string) => character.ownedItemIds.includes(id);
+  const equipped = (item: ShopItem) => character.equipped[item.category] === item.id;
+
+  const handleAction = (item: ShopItem) => {
+    if (!owned(item.id)) {
+      if (character.coins < item.price) {
+        showToast?.("Not enough coins yet — keep questing! 🌱", 'info');
+        return;
+      }
+      buyItem(item.id);
+      showToast?.(`Got ${item.name}! ✨`, 'success');
       return;
     }
-
-    if (state.character.coins < item.price) {
-      showToast({
-        title: 'Not enough coins',
-        message: `You need ${item.price - state.character.coins} more coins.`,
-        emoji: '🪙',
-      });
-      return;
-    }
-
-    buyItem(item);
-    showToast({
-      title: `Purchased ${item.name}!`,
-      message: `Enjoy your new ${item.category}! 💖`,
-      emoji: item.emoji,
-    });
+    equipItem?.(item.id);
+    showToast?.(`Equipped ${item.name} 💖`, 'success');
   };
 
   return (
@@ -61,69 +45,65 @@ export default function ShopPage() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Cozy Shop 🛍️</h1>
-          <p className={styles.subtitle}>Spend your hard-earned coins on something delightful.</p>
+          <p className={styles.subtitle}>Spend coins on adorable cosmetics for your character.</p>
         </div>
-        <div className={styles.coinDisplay}>
-          <Coins size={20} />
-          <span>{state.character.coins}</span>
+        <div className={styles.preview}>
+          <CharacterAvatar size="sm" />
+          <div className={styles.coins}>
+            <Coins size={16} />
+            <span>{character.coins}</span>
+          </div>
         </div>
       </div>
 
-      <div className={styles.layout}>
-        <aside className={styles.preview}>
-          <Character size="md" showName />
-        </aside>
+      <div className={styles.filters}>
+        {(['all', 'hat', 'outfit', 'accessory', 'decoration'] as Category[]).map((c) => (
+          <button
+            key={c}
+            onClick={() => setCategory(c)}
+            className={clsx(styles.filter, category === c && styles.filterActive)}
+          >
+            {c === 'all' ? '✨ All' : c.charAt(0).toUpperCase() + c.slice(1)}
+          </button>
+        ))}
+      </div>
 
-        <div className={styles.main}>
-          <div className={styles.categories}>
-            {CATEGORIES.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => setCategory(c.value)}
-                className={clsx(styles.catBtn, category === c.value && styles.catBtnActive)}
-              >
-                <span>{c.emoji}</span>
-                <span>{c.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.grid}>
-            {items.map((item) => {
-              const owned = ownedIds.has(item.id);
-              const canAfford = state.character.coins >= item.price;
-              return (
-                <div key={item.id} className={clsx(styles.card, owned && styles.cardOwned)}>
-                  <div className={styles.itemEmoji}>{item.emoji}</div>
-                  <div className={styles.itemName}>{item.name}</div>
-                  <div className={styles.itemCategory}>{item.category}</div>
-                  <div className={styles.itemPrice}>
-                    <Coins size={14} />
-                    <span>{item.price}</span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant={owned ? 'secondary' : 'primary'}
-                    onClick={() => handleBuy(item)}
-                    disabled={!owned && !canAfford}
-                  >
-                    {owned ? (
-                      <>
-                        <Check size={14} /> Equip
-                      </>
-                    ) : canAfford ? (
-                      <>Buy</>
-                    ) : (
-                      <>
-                        <Lock size={14} /> Locked
-                      </>
-                    )}
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      <div className={styles.grid}>
+        {items.map((item) => {
+          const isOwned = owned(item.id);
+          const isEquipped = equipped(item);
+          const canAfford = character.coins >= item.price;
+          return (
+            <Card key={item.id} className={styles.itemCard}>
+              <div className={styles.itemEmoji}>{item.emoji}</div>
+              <h3 className={styles.itemName}>{item.name}</h3>
+              <p className={styles.itemDesc}>{item.description ?? ''}</p>
+              <div className={styles.itemFooter}>
+                {!isOwned ? (
+                  <span className={clsx(styles.price, !canAfford && styles.priceLow)}>
+                    <Coins size={14} /> {item.price}
+                  </span>
+                ) : isEquipped ? (
+                  <span className={styles.equipped}>
+                    <Check size={14} /> Equipped
+                  </span>
+                ) : (
+                  <span className={styles.ownedBadge}>
+                    <Sparkles size={14} /> Owned
+                  </span>
+                )}
+                <Button
+                  size="sm"
+                  variant={isEquipped ? 'ghost' : isOwned ? 'secondary' : 'primary'}
+                  disabled={!isOwned && !canAfford}
+                  onClick={() => handleAction(item)}
+                >
+                  {isEquipped ? 'Equipped' : isOwned ? 'Equip' : 'Buy'}
+                </Button>
+              </div>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
