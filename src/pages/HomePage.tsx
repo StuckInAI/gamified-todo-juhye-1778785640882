@@ -1,118 +1,121 @@
 import { Link } from 'react-router-dom';
-import { Coins, Trophy, ListTodo, ShoppingBag, Sparkles, Heart } from 'lucide-react';
-import Character from '@/components/character/Character';
+import { ListTodo, ShoppingBag, Shirt, Sparkles, Coins } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import Character from '@/components/character/Character';
 import { useGame } from '@/hooks/useGame';
 import { xpForNextLevel } from '@/lib/leveling';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
-  const { state, renameCharacter } = useGame();
+  const { state } = useGame();
   const { character, tasks } = state;
 
-  const completedCount = tasks.filter((t) => t.completed).length;
-  const openCount = tasks.length - completedCount;
-  const need = xpForNextLevel(character.level);
-  const xpPct = Math.min(100, Math.round((character.xp / need) * 100));
+  const openTasks = tasks.filter((t) => !t.completed);
+  const doneToday = tasks.filter(
+    (t) => t.completed && t.completedAt && isToday(t.completedAt)
+  ).length;
 
-  const greeting = (() => {
-    const h = new Date().getHours();
-    if (h < 5) return 'Still up?';
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    if (h < 21) return 'Good evening';
-    return 'Cozy night';
-  })();
+  const need = xpForNextLevel(character.level);
+  const pct = Math.min(100, Math.round((character.xp / need) * 100));
 
   return (
     <div className={styles.page}>
-      <div className={styles.hero}>
-        <Card tone="pink" className={styles.greetCard}>
-          <div className={styles.greetText}>
-            <span className={styles.smallLabel}>{greeting}, friend</span>
-            <h1>
-              Welcome back,{' '}
-              <input
-                className={styles.nameInput}
-                value={character.name}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => renameCharacter(e.target.value)}
-              />
-              !
-            </h1>
-            <p className={styles.tag}>
-              <Heart size={14} fill="currentColor" /> Every tiny step counts. Pick one little quest today.
-            </p>
-
-            <div className={styles.quickActions}>
-              <Link to="/tasks">
-                <Button variant="primary">
-                  <ListTodo size={16} /> Open my quests
-                </Button>
-              </Link>
-              <Link to="/shop">
-                <Button variant="ghost">
-                  <ShoppingBag size={16} /> Visit the shop
-                </Button>
-              </Link>
+      <Card tone="pink" className={styles.hero}>
+        <div className={styles.heroLeft}>
+          <h1 className={styles.greeting}>
+            Hi, {character.name}! <span>🌸</span>
+          </h1>
+          <p className={styles.subtitle}>
+            Tiny steps, cozy wins. Let's make today gentle and productive.
+          </p>
+          <div className={styles.heroStats}>
+            <div className={styles.stat}>
+              <Sparkles size={16} />
+              <span>
+                Level <strong>{character.level}</strong>
+              </span>
+              <div className={styles.xpBar}>
+                <div className={styles.xpFill} style={{ width: `${pct}%` }} />
+              </div>
+              <small>
+                {character.xp}/{need} XP
+              </small>
+            </div>
+            <div className={styles.stat}>
+              <Coins size={16} />
+              <strong>{character.coins}</strong> coins
             </div>
           </div>
-
-          <div className={styles.charWrap}>
-            <Character size="md" showName />
+          <div className={styles.heroActions}>
+            <Link to="/tasks">
+              <Button>
+                <ListTodo size={16} /> Open tasks
+              </Button>
+            </Link>
+            <Link to="/shop">
+              <Button variant="secondary">
+                <ShoppingBag size={16} /> Visit shop
+              </Button>
+            </Link>
           </div>
-        </Card>
-      </div>
-
-      <div className={styles.statGrid}>
-        <Card tone="lavender">
-          <div className={styles.stat}>
-            <Trophy size={22} />
-            <div>
-              <div className={styles.statValue}>Level {character.level}</div>
-              <div className={styles.statLabel}>
-                {character.xp} / {need} XP
-              </div>
-              <div className={styles.statBar}>
-                <div className={styles.statBarFill} style={{ width: `${xpPct}%` }} />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        <Card tone="yellow">
-          <div className={styles.stat}>
-            <Coins size={22} />
-            <div>
-              <div className={styles.statValue}>{character.coins} coins</div>
-              <div className={styles.statLabel}>save up for treasures ✨</div>
-            </div>
-          </div>
-        </Card>
-
-        <Card tone="mint">
-          <div className={styles.stat}>
-            <Sparkles size={22} />
-            <div>
-              <div className={styles.statValue}>
-                {completedCount} done · {openCount} open
-              </div>
-              <div className={styles.statLabel}>
-                {completedCount === 0 ? 'A fresh start awaits 🌷' : 'Look at you go! 🌟'}
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <Card className={styles.tipCard}>
-        <h3>🌸 The Cozy Quest promise</h3>
-        <ul className={styles.tipList}>
-          <li>Every task has an <strong>official deadline</strong> AND a flexible <strong>grace period</strong> — no shame, just gentle nudges.</li>
-          <li>Finish quests to earn <strong>XP</strong> and <strong>coins</strong>. Level up for bonus coins!</li>
-          <li>Spend coins in the <strong>Shop</strong> to dress up your character and decorate their world.</li>
-        </ul>
+        </div>
+        <div className={styles.heroRight}>
+          <Character size="md" showName />
+        </div>
       </Card>
+
+      <div className={styles.grid}>
+        <Card tone="mint">
+          <h3 className={styles.cardTitle}>🌿 Today</h3>
+          <p className={styles.cardBig}>{doneToday}</p>
+          <p className={styles.cardSmall}>tasks completed</p>
+        </Card>
+        <Card tone="sky">
+          <h3 className={styles.cardTitle}>📋 Open quests</h3>
+          <p className={styles.cardBig}>{openTasks.length}</p>
+          <p className={styles.cardSmall}>waiting for you</p>
+        </Card>
+        <Card tone="lavender">
+          <h3 className={styles.cardTitle}>🧺 Wardrobe</h3>
+          <p className={styles.cardBig}>{character.ownedItems.length}</p>
+          <p className={styles.cardSmall}>items owned</p>
+          <Link to="/wardrobe" className={styles.cardLink}>
+            <Shirt size={14} /> Dress up
+          </Link>
+        </Card>
+      </div>
+
+      {openTasks.length > 0 && (
+        <Card className={styles.next}>
+          <h3 className={styles.cardTitle}>✨ Up next</h3>
+          <ul className={styles.nextList}>
+            {openTasks.slice(0, 3).map((t) => (
+              <li key={t.id} className={styles.nextItem}>
+                <span>
+                  {t.difficulty === 'small' ? '🌱' : t.difficulty === 'medium' ? '🌿' : '🌳'}
+                </span>
+                <span>{t.title}</span>
+              </li>
+            ))}
+          </ul>
+          <Link to="/tasks">
+            <Button variant="ghost" size="sm">
+              See all tasks →
+            </Button>
+          </Link>
+        </Card>
+      )}
     </div>
+  );
+}
+
+function isToday(ts: number): boolean {
+  const d = new Date(ts);
+  const now = new Date();
+  return (
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate()
   );
 }

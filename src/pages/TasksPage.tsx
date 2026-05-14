@@ -1,100 +1,72 @@
-import { useMemo, useState } from 'react';
+import Card from '@/components/ui/Card';
 import AddTaskForm from '@/components/tasks/AddTaskForm';
 import TaskItem from '@/components/tasks/TaskItem';
 import { useGame } from '@/hooks/useGame';
 import { useToast } from '@/hooks/useToast';
 import styles from './TasksPage.module.css';
-import clsx from 'clsx';
-
-type Filter = 'all' | 'open' | 'done';
 
 export default function TasksPage() {
   const { state, addTask, toggleTask, deleteTask } = useGame();
   const { showToast } = useToast();
-  const [filter, setFilter] = useState<Filter>('open');
 
-  const visible = useMemo(() => {
-    return state.tasks.filter((t) => {
-      if (filter === 'open') return !t.completed;
-      if (filter === 'done') return t.completed;
-      return true;
-    });
-  }, [state.tasks, filter]);
+  const open = state.tasks.filter((t) => !t.completed);
+  const done = state.tasks.filter((t) => t.completed);
 
   const handleToggle = (id: string) => {
     const result = toggleTask(id);
     if (result) {
-      if (result.leveledUp) {
-        showToast({
-          emoji: '🎉',
-          title: 'Level up!',
-          message: `+${result.xp} XP · +${result.coins} coins (level-up bonus!)`,
-        });
-      } else {
-        showToast({
-          emoji: '🌟',
-          title: 'Quest complete!',
-          message: `+${result.xp} XP · +${result.coins} coins`,
-        });
-      }
+      showToast({
+        emoji: result.leveledUp ? '🎊' : '✨',
+        title: result.leveledUp ? 'Level up!' : 'Nice work!',
+        message: `+${result.xp} XP, +${result.coins} coins`,
+      });
     }
   };
 
   return (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Your Quests 🌷</h1>
-          <p className={styles.sub}>Add tasks at your own pace. No pressure, only progress.</p>
-        </div>
-
-        <div className={styles.filters}>
-          <FilterPill current={filter} value="open" label="To do" onSelect={setFilter} />
-          <FilterPill current={filter} value="done" label="Done" onSelect={setFilter} />
-          <FilterPill current={filter} value="all" label="All" onSelect={setFilter} />
-        </div>
-      </div>
+      <header className={styles.header}>
+        <h1 className={styles.title}>📋 Your Quests</h1>
+        <p className={styles.subtitle}>
+          Add tasks with gentle deadlines and a little grace period. You're doing great.
+        </p>
+      </header>
 
       <AddTaskForm onAdd={addTask} />
 
-      <div className={styles.list}>
-        {visible.length === 0 ? (
-          <div className={styles.empty}>
-            <div className={styles.emptyEmoji}>🌱</div>
-            <h3>{filter === 'done' ? 'No completed quests yet' : 'All quiet here'}</h3>
-            <p>
-              {filter === 'done'
-                ? 'Finish a task and watch your character celebrate!'
-                : 'Plant your first tiny quest above. It can be as small as a single deep breath.'}
-            </p>
-          </div>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>
+          🌱 To do <span className={styles.count}>{open.length}</span>
+        </h2>
+        {open.length === 0 ? (
+          <Card tone="mint" className={styles.empty}>
+            🌷 No open quests. Take a breath, sip something warm, and add one when you're ready.
+          </Card>
         ) : (
-          visible.map((task) => (
-            <TaskItem key={task.id} task={task} onToggle={handleToggle} onDelete={deleteTask} />
-          ))
+          <ul className={styles.list}>
+            {open.map((t) => (
+              <li key={t.id}>
+                <TaskItem task={t} onToggle={handleToggle} onDelete={deleteTask} />
+              </li>
+            ))}
+          </ul>
         )}
-      </div>
-    </div>
-  );
-}
+      </section>
 
-function FilterPill({
-  current,
-  value,
-  label,
-  onSelect,
-}: {
-  current: Filter;
-  value: Filter;
-  label: string;
-  onSelect: (v: Filter) => void;
-}) {
-  return (
-    <button
-      onClick={() => onSelect(value)}
-      className={clsx(styles.pill, current === value && styles.pillActive)}
-    >
-      {label}
-    </button>
+      {done.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            ✅ Completed <span className={styles.count}>{done.length}</span>
+          </h2>
+          <ul className={styles.list}>
+            {done.map((t) => (
+              <li key={t.id}>
+                <TaskItem task={t} onToggle={handleToggle} onDelete={deleteTask} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   );
 }
